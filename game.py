@@ -11,9 +11,13 @@ class ObstacleTypes (enum.Enum):
     Bottom = 0
     Top = 1
 class Obstacle:
-    def __init__(self,tick,my):
+    def __init__(self,tick,my,score=0):
+        my += 1#Compensate for bottom
         self.otype = [ObstacleTypes.Bottom if random.randint(0,1) == 1 else ObstacleTypes.Top][0]
-        self.height = random.randint(round(0.2*my),round(0.6*my))
+        maximium = 0.6
+        if score > 100:
+            maximium = 0.7
+        self.height = random.randint(round(0.3*my),round(maximium*my))
         self.launchtick = tick
 
 obstacles:list[Obstacle] = []
@@ -23,46 +27,50 @@ def die(stdscr):
     sys.exit()
 
 def game(stdscr):
+    BOTTOM = stdscr.getmaxyx()[0]-1
+    #15 Ys between obstacles
+    #((mx*2)-2)*30
+    sleepyTick = ((stdscr.getmaxyx()[1]*2)-2*15)
     lasttick = datetime.datetime.now()
     tk = 0
     stdscr.nodelay(1)
     cursesplus.displaymsg(stdscr,["Command-Line Flappy Bird"],False,False)
-    py = stdscr.getmaxyx()[0]//2
+    py = BOTTOM//2
     gravity = 0
     while True:
         py += gravity
         
         ch = stdscr.getch()
-        if ch != -1 and tk > 500:
+        if ch != -1 and tk > sleepyTick:
             if curses.keyname(ch) == b" " or curses.keyname(ch) == b"j":
                 #cursesplus.messagebox.showinfo(stdscr,[])
                 gravity = -1
-        if tk > 500:
+        if tk > sleepyTick:
             gravity += 0.1
         try:
             stdscr.addstr(round(py),5,"P")
         except:
             die(stdscr)
         for obstacle in obstacles:
-            pos = stdscr.getmaxyx()[1]-1 - round((tk - obstacle.launchtick)/5)
+            pos = stdscr.getmaxyx()[1]-1 - round((tk - obstacle.launchtick)//2)
             if pos < 0:
                 obstacles.remove(obstacle)
                 continue
             if obstacle.otype == ObstacleTypes.Bottom:
                 for i in range(1,obstacle.height):
-                    stdscr.addstr(stdscr.getmaxyx()[0]-1-i,pos,"█")
+                    stdscr.addstr(BOTTOM-i,pos,"█")
             else:
                 for i in range(0,obstacle.height):
                     stdscr.addstr(i,pos,"█") 
         cursesplus.utils.fill_line(stdscr,0,cursesplus.set_colour(cursesplus.BLUE,cursesplus.WHITE))
-        cursesplus.utils.fill_line(stdscr,stdscr.getmaxyx()[0]-1,cursesplus.set_colour(cursesplus.RED,cursesplus.WHITE))
-        stdscr.addstr(0,0,f"Score: {tk//30}",cursesplus.set_colour(cursesplus.BLUE,cursesplus.WHITE))
+        cursesplus.utils.fill_line(stdscr,BOTTOM,cursesplus.set_colour(cursesplus.RED,cursesplus.WHITE))
+        stdscr.addstr(0,0,f"Score: {(tk-sleepyTick)//30}",cursesplus.set_colour(cursesplus.BLUE,cursesplus.WHITE))
         
         tk += 1
-        if tk/60 == tk // 60:
-            obstacles.append(Obstacle(tk,stdscr.getmaxyx()[0]))
+        if tk/30 == tk // 30:
+            obstacles.append(Obstacle(tk,BOTTOM,(tk-sleepyTick)//30))
         
-        if tk > 500:
+        if tk > sleepyTick:
             stdscr.refresh()
             try:
                 if chr(stdscr.inch(round(py),5)) == "█":
