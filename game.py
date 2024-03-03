@@ -22,11 +22,7 @@ class Obstacle:
 
 obstacles:list[Obstacle] = []
 
-def die(stdscr):
-    cursesplus.messagebox.showerror(stdscr,["You died!"])
-    sys.exit()
-
-def game(stdscr):
+def game(stdscr) -> int:
     BOTTOM = stdscr.getmaxyx()[0]-1
     #15 Ys between obstacles
     #((mx*2)-2)*30
@@ -50,7 +46,8 @@ def game(stdscr):
         try:
             stdscr.addstr(round(py),5,"P")
         except:
-            die(stdscr)
+            cursesplus.messagebox.showerror(stdscr,["You died!"])
+            return (tk-sleepyTick)//30
         for obstacle in obstacles:
             pos = stdscr.getmaxyx()[1]-1 - round((tk - obstacle.launchtick)//2)
             if pos < 0:
@@ -74,9 +71,11 @@ def game(stdscr):
             stdscr.refresh()
             try:
                 if chr(stdscr.inch(round(py),5)) == "█":
-                    die(stdscr)
+                    cursesplus.messagebox.showerror(stdscr,["You died!"])
+                    return (tk-sleepyTick)//30
             except:
-                die(stdscr)
+                cursesplus.messagebox.showerror(stdscr,["You died!"])
+                return (tk-sleepyTick)//30
             tosleep = (1/30*1000000 - (datetime.datetime.now()-lasttick).microseconds)/1000000
             #cursesplus.messagebox.showinfo(stdscr,[str(tosleep)])
             time.sleep(tosleep)
