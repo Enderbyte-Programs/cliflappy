@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Flappy Bird (CLI)
+Comment=Command-line flappy bird game
+Path=/
+Exec=/usr/bin/cliflappy
+Icon=/usr/share/pixmaps/cliflappy.png
+Terminal=true
+Categories=Game

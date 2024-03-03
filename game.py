@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import curses
 import os
 import sys
@@ -5,18 +7,59 @@ import random
 import time
 import cursesplus
 import datetime
+import signal
 import enum
 
+INGAME = False
+SCREEN = None
+
+HELP = """
+How To Play
+
+Press the space bar to move up
+
+Don't hit the obstacles
+Don't fall off the bottom
+Don't go too high
+
+For if you do, you will DIE!
+
+Have fun...
+"""
+
+def help(stdscr):
+    cursesplus.textview(stdscr,text=HELP)
+
+def ctrlchandler(sig,frame):
+    if INGAME:
+        SCREEN.nodelay(0)
+    msg = ["Are you sure you wish to quit?"]
+    if INGAME:
+        msg.append("You will lose your progress in this game.")
+    if cursesplus.messagebox.askyesno(SCREEN,msg):
+        sys.exit()
+    if INGAME:
+        SCREEN.nodelay(1)
+
 def menu(stdscr):
+    signal.signal(signal.SIGINT,ctrlchandler)
+
+    global SCREEN
+    global INGAME
+    SCREEN = stdscr
     cursesplus.utils.hidecursor()
+
     while True:
         wtd = cursesplus.coloured_option_menu(stdscr,["Play Game!","Settings","Statistics","Help","Quit"],"Command Line Flappy Bird! Choose an option.",[["quit",cursesplus.RED],["play",cursesplus.GREEN],["help",cursesplus.CYAN]])
         if wtd == 0:
             stdscr.nodelay(1)
             recentscore = game(stdscr)
+            INGAME = False
             stdscr.nodelay(0)#Back to char only
+        elif wtd == 3:
+            help(stdscr)
         elif wtd == 4:
-            return
+            break
     cursesplus.utils.showcursor()
 
 class ObstacleTypes (enum.Enum):
@@ -33,6 +76,8 @@ class Obstacle:
         self.launchtick = tick
 
 def game(stdscr) -> int:
+    global INGAME
+    INGAME = True
     obstacles:list[Obstacle] = []
     BOTTOM = stdscr.getmaxyx()[0]-1
     #15 Ys between obstacles
@@ -88,8 +133,8 @@ def game(stdscr) -> int:
                 cursesplus.messagebox.showerror(stdscr,["You died!"])
                 return (tk-sleepyTick)//30
             tosleep = (1/30*1000000 - (datetime.datetime.now()-lasttick).microseconds)/1000000
-            #cursesplus.messagebox.showinfo(stdscr,[str(tosleep)])
-            time.sleep(tosleep)
+            if tosleep > 0:#Prevent crash in laggy confitions
+                time.sleep(tosleep)
             stdscr.clear()
         
         lasttick = datetime.datetime.now()
