@@ -7,6 +7,18 @@ import cursesplus
 import datetime
 import enum
 
+def menu(stdscr):
+    cursesplus.utils.hidecursor()
+    while True:
+        wtd = cursesplus.coloured_option_menu(stdscr,["Play Game!","Settings","Statistics","Help","Quit"],"Command Line Flappy Bird! Choose an option.",[["quit",cursesplus.RED],["play",cursesplus.GREEN],["help",cursesplus.CYAN]])
+        if wtd == 0:
+            stdscr.nodelay(1)
+            recentscore = game(stdscr)
+            stdscr.nodelay(0)#Back to char only
+        elif wtd == 4:
+            return
+    cursesplus.utils.showcursor()
+
 class ObstacleTypes (enum.Enum):
     Bottom = 0
     Top = 1
@@ -20,16 +32,15 @@ class Obstacle:
         self.height = random.randint(round(0.3*my),round(maximium*my))
         self.launchtick = tick
 
-obstacles:list[Obstacle] = []
-
 def game(stdscr) -> int:
+    obstacles:list[Obstacle] = []
     BOTTOM = stdscr.getmaxyx()[0]-1
     #15 Ys between obstacles
     #((mx*2)-2)*30
     sleepyTick = ((stdscr.getmaxyx()[1]*2)-2*15)
     lasttick = datetime.datetime.now()
     tk = 0
-    stdscr.nodelay(1)
+   
     cursesplus.displaymsg(stdscr,["Command-Line Flappy Bird"],False,False)
     py = BOTTOM//2
     gravity = 0
@@ -83,4 +94,4 @@ def game(stdscr) -> int:
         
         lasttick = datetime.datetime.now()
 
-curses.wrapper(game)
+curses.wrapper(menu)
