@@ -18,13 +18,20 @@ class Obstacle:
 
 obstacles:list[Obstacle] = []
 
+def die(stdscr):
+    cursesplus.messagebox.showerror(stdscr,["You died!"])
+    sys.exit()
+
 def game(stdscr):
+    lasttick = datetime.datetime.now()
     tk = 0
     stdscr.nodelay(1)
+    cursesplus.displaymsg(stdscr,["Command-Line Flappy Bird"],False,False)
     py = stdscr.getmaxyx()[0]//2
     gravity = 0
     while True:
         py += gravity
+        
         ch = stdscr.getch()
         if ch != -1 and tk > 500:
             if curses.keyname(ch) == b" " or curses.keyname(ch) == b"j":
@@ -35,8 +42,7 @@ def game(stdscr):
         try:
             stdscr.addstr(round(py),5,"P")
         except:
-            print("You lose!")
-            sys.exit()
+            die(stdscr)
         for obstacle in obstacles:
             pos = stdscr.getmaxyx()[1]-1 - round((tk - obstacle.launchtick)/5)
             if pos < 0:
@@ -48,16 +54,26 @@ def game(stdscr):
             else:
                 for i in range(0,obstacle.height):
                     stdscr.addstr(i,pos,"█") 
+        cursesplus.utils.fill_line(stdscr,0,cursesplus.set_colour(cursesplus.BLUE,cursesplus.WHITE))
+        cursesplus.utils.fill_line(stdscr,stdscr.getmaxyx()[0]-1,cursesplus.set_colour(cursesplus.RED,cursesplus.WHITE))
+        stdscr.addstr(0,0,f"Score: {tk//30}",cursesplus.set_colour(cursesplus.BLUE,cursesplus.WHITE))
         
-        stdscr.refresh()
         tk += 1
         if tk/60 == tk // 60:
             obstacles.append(Obstacle(tk,stdscr.getmaxyx()[0]))
+        
         if tk > 500:
-            if chr(stdscr.inch(round(py),5)) == "█":
-                print("You lose!")
-                sys.exit()
-            time.sleep(1/30)
-        stdscr.clear()
+            stdscr.refresh()
+            try:
+                if chr(stdscr.inch(round(py),5)) == "█":
+                    die(stdscr)
+            except:
+                die(stdscr)
+            tosleep = (1/30*1000000 - (datetime.datetime.now()-lasttick).microseconds)/1000000
+            #cursesplus.messagebox.showinfo(stdscr,[str(tosleep)])
+            time.sleep(tosleep)
+            stdscr.clear()
+        
+        lasttick = datetime.datetime.now()
 
 curses.wrapper(game)
