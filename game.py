@@ -9,6 +9,19 @@ import cursesplus
 import datetime
 import signal
 import enum
+import epappdata
+
+epappdata.register_app_name("CliFlappy")
+APPDATA = epappdata.AppDataFile()
+APPDATA.setdefault({
+    "settings" : {
+
+    },
+    "stats" : {
+        "highscore" : 0
+    }
+})
+APPDATA.load()
 
 INGAME = False
 SCREEN = None
@@ -41,6 +54,17 @@ def ctrlchandler(sig,frame):
     if INGAME:
         SCREEN.nodelay(1)
 
+def settings(stdscr):
+    cursesplus.messagebox.showerror(stdscr,["No settings yet"])
+
+def stats(stdscr):
+    stdscr.clear()
+    stdscr.addstr(0,0,"Statistics")
+    stdscr.addstr(2,0,f"High Score: {APPDATA['stats']['highscore']}")
+    stdscr.addstr(4,0,"Press any key to continue.")
+    stdscr.refresh()
+    stdscr.getch()
+
 def menu(stdscr):
     signal.signal(signal.SIGINT,ctrlchandler)
 
@@ -50,16 +74,25 @@ def menu(stdscr):
     cursesplus.utils.hidecursor()
 
     while True:
+        APPDATA.write()
         wtd = cursesplus.coloured_option_menu(stdscr,["Play Game!","Settings","Statistics","Help","Quit"],"Command Line Flappy Bird! Choose an option.",[["quit",cursesplus.RED],["play",cursesplus.GREEN],["help",cursesplus.CYAN]])
         if wtd == 0:
             stdscr.nodelay(1)
             recentscore = game(stdscr)
+            
             INGAME = False
-            stdscr.nodelay(0)#Back to char only
+            stdscr.nodelay(0)#Back to char onlyass
+            if recentscore > APPDATA["stats"]["highscore"]:
+                cursesplus.messagebox.showinfo(stdscr,["Congratulations! You beat your high score!"])
+                APPDATA["stats"]["highscore"] = recentscore
         elif wtd == 3:
             help(stdscr)
         elif wtd == 4:
             break
+        elif wtd == 1:
+            settings(stdscr)
+        elif wtd == 2:
+            stats(stdscr)
     cursesplus.utils.showcursor()
 
 class ObstacleTypes (enum.Enum):
@@ -92,11 +125,7 @@ def game(stdscr) -> int:
     while True:
         py += gravity
         
-        ch = stdscr.getch()
-        if ch != -1 and tk > sleepyTick:
-            if curses.keyname(ch) == b" " or curses.keyname(ch) == b"j":
-                #cursesplus.messagebox.showinfo(stdscr,[])
-                gravity = -1
+        
         if tk > sleepyTick:
             gravity += 0.1
         try:
@@ -122,7 +151,15 @@ def game(stdscr) -> int:
         tk += 1
         if tk/30 == tk // 30:
             obstacles.append(Obstacle(tk,BOTTOM,(tk-sleepyTick)//30))
-        
+        ch = stdscr.getch()
+        if ch != -1 and tk > sleepyTick:
+            if curses.keyname(ch) == b" " or curses.keyname(ch) == b"j":
+                #cursesplus.messagebox.showinfo(stdscr,[])
+                gravity = -1
+            elif curses.keyname(ch) == b"^[":
+                SCREEN.nodelay(0)
+                cursesplus.messagebox.showinfo(stdscr,["Paused. Press enter to resume."])
+                SCREEN.nodelay(1)
         if tk > sleepyTick:
             stdscr.refresh()
             try:
