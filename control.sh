@@ -1,6 +1,7 @@
 set -e
 
 if [ "$1" = "install" ]; then
+    pip3 install -r requirements.txt
     if [ "$EUID" -ne 0 ]; then
         echo "Root priviliges are required to install this app."
         exit 1
@@ -15,6 +16,7 @@ if [ "$1" = "install" ]; then
 fi
 
 if [ "$1" = "run" ]; then
+    pip3 install -r requirements.txt
     python3 game.py
 fi
 
